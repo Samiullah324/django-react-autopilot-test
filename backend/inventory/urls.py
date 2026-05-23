@@ -1,0 +1,42 @@
+from django.urls import path
+
+from .views import (
+    CategoryDetailView,
+    CategoryListCreateView,
+    DashboardView,
+    InventoryTransactionListView,
+    NotificationListView,
+    NotificationMarkReadView,
+    ProductDetailView,
+    ProductExportView,
+    ProductImportView,
+    ProductListCreateView,
+    StockMovementView,
+    SupplierDetailView,
+    SupplierListCreateView,
+    SupplierReportView,
+    TransactionReportView,
+    WarehouseDetailView,
+    WarehouseListCreateView,
+)
+
+urlpatterns = [
+    path('dashboard/', DashboardView.as_view(), name='dashboard'),
+    path('categories/', CategoryListCreateView.as_view(), name='category-list'),
+    path('categories/<int:pk>/', CategoryDetailView.as_view(), name='category-detail'),
+    path('suppliers/', SupplierListCreateView.as_view(), name='supplier-list'),
+    path('suppliers/<int:pk>/', SupplierDetailView.as_view(), name='supplier-detail'),
+    path('suppliers/<int:pk>/report/', SupplierReportView.as_view(), name='supplier-report'),
+    path('warehouses/', WarehouseListCreateView.as_view(), name='warehouse-list'),
+    path('warehouses/<int:pk>/', WarehouseDetailView.as_view(), name='warehouse-detail'),
+    path('products/', ProductListCreateView.as_view(), name='product-list'),
+    path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
+    path('products/import/', ProductImportView.as_view(), name='product-import'),
+    path('products/export/', ProductExportView.as_view(), name='product-export'),
+    path('stock/move/', StockMovementView.as_view(), name='stock-move'),
+    path('transactions/', InventoryTransactionListView.as_view(), name='transaction-list'),
+    path('transactions/report/', TransactionReportView.as_view(), name='transaction-report'),
+    path('notifications/', NotificationListView.as_view(), name='notification-list'),
+    path('notifications/mark-read/', NotificationMarkReadView.as_view(), name='notification-mark-all-read'),
+    path('notifications/<int:pk>/mark-read/', NotificationMarkReadView.as_view(), name='notification-mark-read'),
+]

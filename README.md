@@ -1,37 +1,122 @@
-# Django + React Autopilot Test
+# Inventory Management System (InventoryPro)
 
-A minimal multi-container app for testing Sunset's per-PR preview deploy feature.
+A full-stack inventory management system with real-time stock tracking, built with Django REST Framework and React.
+
+**Ticket:** DJAN-0001
 
 ## Architecture
 
-- `frontend/` — React + Vite, served by nginx (primary container, port 80)
-- `backend/` — Django + Gunicorn (sidecar container, port 8000)
+| Layer     | Stack                                      |
+|-----------|--------------------------------------------|
+| Frontend  | React 18, TypeScript, Vite, Tailwind CSS   |
+| Backend   | Django 5.2, Django REST Framework, JWT     |
+| Database  | PostgreSQL (production) / SQLite (dev)     |
+| Deploy    | Docker multi-container (nginx + Gunicorn)  |
 
-nginx proxies `/api/*` to `127.0.0.1:8000` so the two containers talk inside
-the same ECS task.
+## Features
 
-## Local dev
+- **Dashboard** — Overview cards, charts, recent activity timeline
+- **Product Management** — CRUD, search/filter, CSV/Excel import/export
+- **Inventory Tracking** — Stock in/out, warehouse-based quantities, adjustment logs
+- **Supplier Management** — Contacts, purchase history, supplier reports
+- **Transactions** — Full history with PDF/Excel report downloads
+- **User Roles** — Admin, Manager, Staff with role-based access control
+- **Notifications** — Low stock and out-of-stock alerts
+- **UI/UX** — Responsive design, dark/light mode, modern SaaS-style interface
+
+## Quick Start (Local Dev)
+
+### Backend
 
 ```bash
-# Backend (terminal 1)
 cd backend
 pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_demo_data
 python manage.py runserver 0.0.0.0:8000
+```
 
-# Frontend (terminal 2)
+### Frontend
+
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-## Sunset Autopilot service config
+Open http://localhost:3000
 
-After adopting this repo, set the services in Autopilot settings to:
+### Demo Accounts
 
-| Name     | Dockerfile             | Port | Primary | Health         |
-|----------|------------------------|------|---------|----------------|
-| frontend | frontend/Dockerfile    | 80   | yes     | /health        |
-| backend  | backend/Dockerfile     | 8000 | no      | /api/health/   |
+| Username | Password     | Role    |
+|----------|--------------|---------|
+| admin    | admin12345   | Admin   |
+| manager  | manager123   | Manager |
+| staff    | staff123     | Staff   |
 
-Only the primary container (frontend) is exposed to the ALB; the backend
-is reachable inside the task at `127.0.0.1:8000`.
+## PostgreSQL (Optional)
+
+Set environment variables before starting the backend:
+
+```bash
+export POSTGRES_DB=inventory
+export POSTGRES_USER=inventory
+export POSTGRES_PASSWORD=inventory
+export POSTGRES_HOST=localhost
+export POSTGRES_PORT=5432
+```
+
+## Running Tests
+
+```bash
+cd backend
+python manage.py test
+```
+
+## API Documentation
+
+See [docs/API.md](docs/API.md) for the full REST API reference.
+
+## Docker Deployment
+
+```bash
+# Build and run backend
+cd backend && docker build -t inventory-backend .
+
+# Build and run frontend
+cd frontend && docker build -t inventory-frontend .
+```
+
+### Sunset Autopilot Service Config
+
+| Name     | Dockerfile          | Port | Primary | Health       |
+|----------|---------------------|------|---------|--------------|
+| frontend | frontend/Dockerfile | 80   | yes     | /health      |
+| backend  | backend/Dockerfile  | 8000 | no      | /api/health/ |
+
+## Project Structure
+
+```
+backend/
+  accounts/          # User profiles, JWT auth, RBAC
+  inventory/         # Products, stock, suppliers, transactions
+  server/            # Django settings and URLs
+frontend/
+  src/
+    components/      # Layout, shared UI
+    context/         # Auth and theme providers
+    pages/           # Dashboard, Products, Inventory, etc.
+    lib/             # API client, download helpers
+docs/
+  API.md             # REST API documentation
+```
+
+## Role Permissions
+
+| Action              | Admin | Manager | Staff |
+|---------------------|-------|---------|-------|
+| View dashboard/data | ✓     | ✓       | ✓     |
+| Create/edit products| ✓     | ✓       | ✗     |
+| Stock movements     | ✓     | ✓       | ✗     |
+| Manage suppliers    | ✓     | ✓       | ✗     |
+| User management     | ✓     | ✗       | ✗     |

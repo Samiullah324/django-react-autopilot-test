@@ -3,9 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>Django + React Autopilot Test</title>
+    <script>
+      (function () {
+        var STORAGE_KEY = 'theme-preference';
+        var preference = 'system';
+
+        try {
+          var stored = localStorage.getItem(STORAGE_KEY);
+          if (stored === 'light' || stored === 'dark' || stored === 'system') {
+            preference = stored;
+          }
+        } catch (e) {}
+
+        var resolved =
+          preference === 'system'
+            ? window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light'
+            : preference;
+
+        document.documentElement.dataset.theme = resolved;
+      })();
+    </script>
   </head>
-  <body style="margin:0;background:#0f172a;">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

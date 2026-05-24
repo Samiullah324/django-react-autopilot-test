@@ -55,8 +55,26 @@ function App() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <h1 style={styles.h1}>Django + React</h1>
-        <p style={styles.subtitle}>Sunset Autopilot preview deploy target.</p>
+        <div style={styles.headerRow}>
+          <div>
+            <h1 style={styles.h1}>Django + React</h1>
+            <p style={styles.subtitle}>Sunset Autopilot preview deploy target.</p>
+          </div>
+          <span
+            style={{
+              ...styles.statusBadge,
+              ...(status === 'connected' ? styles.statusConnected : {}),
+              ...(status === 'loading' ? styles.statusLoading : {}),
+              ...(status === 'error' ? styles.statusError : {}),
+            }}
+            role="status"
+            aria-live="polite"
+          >
+            {status === 'connected' && 'Connected'}
+            {status === 'loading' && 'Checking…'}
+            {status === 'error' && 'Error'}
+          </span>
+        </div>
 
         <div style={styles.section} aria-busy={loading}>
           <div style={styles.sectionHeader}>
@@ -142,6 +160,14 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     padding: 32,
     boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
+    transition: 'box-shadow 0.2s ease',
+  },
+  headerRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 16,
+    flexWrap: 'wrap',
   },
   h1: {
     margin: 0,
@@ -152,6 +178,33 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 6,
     color: '#94a3b8',
     fontSize: 14,
+  },
+  statusBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '4px 10px',
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    border: '1px solid transparent',
+    flexShrink: 0,
+  },
+  statusConnected: {
+    color: '#34d399',
+    background: 'rgba(52, 211, 153, 0.12)',
+    borderColor: 'rgba(52, 211, 153, 0.35)',
+  },
+  statusLoading: {
+    color: '#94a3b8',
+    background: 'rgba(148, 163, 184, 0.1)',
+    borderColor: 'rgba(148, 163, 184, 0.25)',
+  },
+  statusError: {
+    color: '#f87171',
+    background: 'rgba(248, 113, 113, 0.12)',
+    borderColor: 'rgba(248, 113, 113, 0.35)',
   },
   section: {
     marginTop: 24,
@@ -219,6 +272,23 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
     flexShrink: 0,
+  },
+  loadingRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  spinner: {
+    width: 16,
+    height: 16,
+    border: '2px solid #334155',
+    borderTopColor: '#22d3ee',
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite',
+    flexShrink: 0,
+  },
+  responseContent: {
+    animation: 'fadeIn 0.25s ease',
   },
   message: {
     margin: 0,

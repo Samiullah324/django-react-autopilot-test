@@ -518,7 +518,239 @@ tr:hover td {
   display: none;
 }
 
+.text-muted {
+  color: var(--text-muted);
+}
+
+.landing-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.landing-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.landing-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.landing-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.landing-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+
+.landing-status--connected {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: rgba(5, 150, 105, 0.25);
+}
+
+.landing-status--loading {
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border-color: var(--border);
+}
+
+.landing-status--error {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+.landing-main {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px;
+}
+
+.landing-hero {
+  margin-bottom: 32px;
+  padding: 36px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+  color: #f8fafc;
+  box-shadow: var(--shadow);
+}
+
+.landing-eyebrow {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a5b4fc;
+}
+
+.landing-hero h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.15;
+}
+
+.landing-hero-subtitle {
+  margin: 14px 0 0;
+  max-width: 640px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.landing-highlights {
+  margin: 20px 0 0;
+  padding-left: 20px;
+  color: #e2e8f0;
+  line-height: 1.7;
+}
+
+.landing-highlights li + li {
+  margin-top: 4px;
+}
+
+.landing-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.landing-section {
+  margin-bottom: 28px;
+}
+
+.landing-section-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.landing-section-header p {
+  margin: 6px 0 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.landing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.landing-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.category-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.category-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.category-list-item:last-child {
+  border-bottom: none;
+}
+
+.category-count {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.landing-backend-message {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.landing-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+}
+
+.landing-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.landing-backend-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.landing-footer {
+  padding: 20px 28px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
 @media (max-width: 900px) {
+  .landing-main {
+    padding: 16px;
+  }
+
+  .landing-hero {
+    padding: 24px;
+  }
+
+  .landing-grid {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar {
     transform: translateX(-100%);
   }

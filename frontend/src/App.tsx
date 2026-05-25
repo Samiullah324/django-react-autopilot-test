@@ -1,5 +1,24 @@
+import {
+  AlertTriangle,
+  ArrowLeftRight,
+  BarChart3,
+  Boxes,
+  Package,
+  PackageX,
+  Shield,
+  Truck,
+  Warehouse,
+} from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { StatCard } from './components/StatCard';
+import {
+  landingCategoryHighlights,
+  landingFeatures,
+  landingRecentActivity,
+  landingStats,
+  landingWarehouses,
+} from './data/landingDummyData';
 
 interface HelloResponse {
   message: string;
@@ -7,9 +26,9 @@ interface HelloResponse {
   timestamp: string;
 }
 
-
 type ConnectionStatus = 'loading' | 'connected' | 'error';
 
+const featureIcons = [Boxes, Truck, BarChart3, Shield];
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -20,7 +39,6 @@ function formatTimestamp(iso: string): string {
     timeStyle: 'short',
   });
 }
-
 
 function App() {
   const [data, setData] = useState<HelloResponse | null>(null);
@@ -54,197 +72,180 @@ function App() {
   const status: ConnectionStatus = loading ? 'loading' : error ? 'error' : 'connected';
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.headerRow}>
-          <div>
-            <h1 style={styles.h1}>Django + React</h1>
-            <p style={styles.subtitle}>Sunset Autopilot preview deploy target.</p>
+    <div className="landing-page" data-theme="dark">
+      <header className="landing-header">
+        <div className="landing-brand">
+          <div className="sidebar-brand-icon">
+            <Package size={18} />
           </div>
-          <span
-            style={{
-              ...styles.statusBadge,
-              ...(status === 'connected' ? styles.statusConnected : {}),
-              ...(status === 'loading' ? styles.statusLoading : {}),
-              ...(status === 'error' ? styles.statusError : {}),
-            }}
-            role="status"
-            aria-live="polite"
-          >
-            {status === 'connected' && 'Connected'}
-            {status === 'loading' && 'Checking…'}
-            {status === 'error' && 'Error'}
-          </span>
+          <div>
+            <h1>StockFlow</h1>
+            <p>Inventory Management System</p>
+          </div>
         </div>
+        <span
+          className={`landing-status landing-status--${status}`}
+          role="status"
+          aria-live="polite"
+        >
+          {status === 'connected' && 'API Connected'}
+          {status === 'loading' && 'Checking API…'}
+          {status === 'error' && 'API Offline'}
+        </span>
+      </header>
 
-        <div style={styles.section} aria-live="polite">
-          <div style={styles.sectionLabel}>Backend response</div>
-          {loading ? (
-            <div style={styles.loadingRow} role="status" aria-label="Loading backend response">
-              <span style={styles.spinner} aria-hidden="true" />
-              <span style={styles.meta}>Fetching from Django…</span>
+      <main className="landing-main">
+        <section className="landing-hero">
+          <div className="landing-hero-content">
+            <p className="landing-eyebrow">Django + React · Sunset Autopilot</p>
+            <h2>Manage inventory with clarity and control</h2>
+            <p className="landing-hero-text">
+              StockFlow helps teams track products, suppliers, warehouses, and transactions from a
+              single dashboard. Preview the platform below with sample data.
+            </p>
+            <div className="landing-hero-actions">
+              <a className="btn btn-primary" href="#overview">
+                View Overview
+              </a>
+              <a className="btn btn-secondary" href="#activity">
+                Recent Activity
+              </a>
             </div>
+          </div>
+          <div className="landing-hero-panel card">
+            <div className="card-header">Platform Snapshot</div>
+            <div className="card-body">
+              <ul className="landing-snapshot-list">
+                {landingCategoryHighlights.map((category) => (
+                  <li key={category.name}>
+                    <span>{category.name}</span>
+                    <strong>{category.count} products</strong>
+                  </li>
+                ))}
+              </ul>
+              <div className="landing-snapshot-divider" />
+              <ul className="landing-snapshot-list">
+                {landingWarehouses.map((warehouse) => (
+                  <li key={warehouse.name}>
+                    <span>
+                      <Warehouse size={14} style={{ marginRight: 6, verticalAlign: -2 }} />
+                      {warehouse.name}
+                    </span>
+                    <strong>{warehouse.products} SKUs</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="overview" className="landing-section">
+          <div className="landing-section-header">
+            <h3>Inventory Overview</h3>
+            <p>Sample metrics from the demo dataset</p>
+          </div>
+          <div className="stats-grid">
+            <StatCard label="Total Products" value={landingStats.total_products} icon={Package} />
+            <StatCard
+              label="Low Stock Items"
+              value={landingStats.low_stock_items}
+              icon={AlertTriangle}
+              tone="warning"
+            />
+            <StatCard
+              label="Out of Stock"
+              value={landingStats.out_of_stock_items}
+              icon={PackageX}
+              tone="danger"
+            />
+            <StatCard
+              label="Total Suppliers"
+              value={landingStats.total_suppliers}
+              icon={Truck}
+              tone="success"
+            />
+            <StatCard
+              label="Transactions"
+              value={landingStats.recent_transactions}
+              icon={ArrowLeftRight}
+            />
+          </div>
+        </section>
+
+        <section className="landing-section">
+          <div className="landing-section-header">
+            <h3>Core Capabilities</h3>
+            <p>Everything you need to run day-to-day inventory operations</p>
+          </div>
+          <div className="landing-features">
+            {landingFeatures.map((feature, index) => {
+              const Icon = featureIcons[index] ?? Boxes;
+              return (
+                <article key={feature.title} className="landing-feature card">
+                  <div className="landing-feature-icon">
+                    <Icon size={22} />
+                  </div>
+                  <h4>{feature.title}</h4>
+                  <p>{feature.description}</p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section id="activity" className="landing-section">
+          <div className="landing-section-header">
+            <h3>Recent Activity</h3>
+            <p>Latest stock movements from the demo environment</p>
+          </div>
+          <div className="card">
+            <div className="card-body">
+              <div className="timeline">
+                {landingRecentActivity.map((item) => (
+                  <div key={item.id} className="timeline-item">
+                    <div className="timeline-dot" />
+                    <div className="timeline-content">
+                      <h4>
+                        {item.transaction_type_display}: {item.product_name}
+                      </h4>
+                      <p>
+                        {item.quantity > 0 ? '+' : ''}
+                        {item.quantity} units at {item.warehouse_name} · {item.created_by_name} ·{' '}
+                        {formatTimestamp(item.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="landing-footer">
+        <div className="landing-footer-content">
+          <p>
+            Demo credentials: <code>admin</code> / <code>admin12345</code> · nginx serves this page ·{' '}
+            <code>/api/*</code> proxies to Django
+          </p>
+          {loading ? (
+            <p className="landing-footer-meta">Checking backend…</p>
           ) : error ? (
-            <div>
-              <p style={styles.error} role="alert">
-                {error}
-              </p>
-              <button type="button" style={styles.retryButton} onClick={fetchHello}>
+            <p className="landing-footer-meta landing-footer-meta--error" role="alert">
+              Backend unavailable ({error}).{' '}
+              <button type="button" className="landing-retry" onClick={fetchHello}>
                 Retry
               </button>
-            </div>
+            </p>
           ) : data ? (
-            <div style={styles.responseContent}>
-              <p style={styles.message}>{data.message}</p>
-              <p style={styles.meta}>
-                v{data.version} · {formatTimestamp(data.timestamp)}
-              </p>
-            </div>
+            <p className="landing-footer-meta">
+              {data.message} · v{data.version} · {formatTimestamp(data.timestamp)}
+            </p>
           ) : null}
         </div>
-
-        <div style={styles.footer}>
-          nginx serves this page · /api/* proxies to the Django sidecar on the same ECS
-          task.
-        </div>
-      </div>
+      </footer>
     </div>
   );
 }
-
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-    color: '#f1f5f9',
-    padding: 24,
-  },
-  card: {
-    maxWidth: 560,
-    width: '100%',
-    background: '#0b1220',
-    border: '1px solid #1f2937',
-    borderRadius: 12,
-    padding: 32,
-    boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
-    transition: 'box-shadow 0.2s ease',
-  },
-  headerRow: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 16,
-    flexWrap: 'wrap',
-  },
-  h1: {
-    margin: 0,
-    fontSize: 28,
-    fontWeight: 700,
-  },
-  subtitle: {
-    marginTop: 6,
-    color: '#94a3b8',
-    fontSize: 14,
-  },
-  statusBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: 11,
-    fontWeight: 600,
-    letterSpacing: '0.04em',
-    textTransform: 'uppercase',
-    border: '1px solid transparent',
-    flexShrink: 0,
-  },
-  statusConnected: {
-    color: '#34d399',
-    background: 'rgba(52, 211, 153, 0.12)',
-    borderColor: 'rgba(52, 211, 153, 0.35)',
-  },
-  statusLoading: {
-    color: '#94a3b8',
-    background: 'rgba(148, 163, 184, 0.1)',
-    borderColor: 'rgba(148, 163, 184, 0.25)',
-  },
-  statusError: {
-    color: '#f87171',
-    background: 'rgba(248, 113, 113, 0.12)',
-    borderColor: 'rgba(248, 113, 113, 0.35)',
-  },
-  section: {
-    marginTop: 24,
-    padding: 16,
-    background: '#0f1a2e',
-    border: '1px solid #1e293b',
-    borderRadius: 8,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    letterSpacing: '0.12em',
-    textTransform: 'uppercase',
-    color: '#64748b',
-    marginBottom: 8,
-  },
-  loadingRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-  },
-  spinner: {
-    width: 16,
-    height: 16,
-    border: '2px solid #334155',
-    borderTopColor: '#22d3ee',
-    borderRadius: '50%',
-    animation: 'spin 0.8s linear infinite',
-    flexShrink: 0,
-  },
-  responseContent: {
-    animation: 'fadeIn 0.25s ease',
-  },
-  message: {
-    margin: 0,
-    fontSize: 20,
-    fontWeight: 600,
-    color: '#22d3ee',
-  },
-  meta: {
-    margin: '6px 0 0',
-    color: '#94a3b8',
-    fontSize: 12,
-  },
-  error: {
-    margin: 0,
-    color: '#f87171',
-    fontSize: 14,
-  },
-  retryButton: {
-    marginTop: 12,
-    padding: '8px 14px',
-    fontSize: 13,
-    fontWeight: 600,
-    fontFamily: 'inherit',
-    color: '#f1f5f9',
-    background: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: 6,
-    cursor: 'pointer',
-    transition: 'background 0.15s ease, border-color 0.15s ease',
-  },
-  footer: {
-    marginTop: 24,
-    fontSize: 11,
-    color: '#64748b',
-    lineHeight: 1.6,
-  },
-};
-
 
 export default App;

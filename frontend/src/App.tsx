@@ -15,10 +15,12 @@ function formatTimestamp(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
 
-  return date.toLocaleString(undefined, {
+  return new Intl.DateTimeFormat('en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',
-  });
+    timeZone: 'UTC',
+    timeZoneName: 'short',
+  }).format(date);
 }
 
 
@@ -30,20 +32,15 @@ function App() {
   const fetchHello = useCallback(() => {
     setLoading(true);
     setError(null);
+    setData(null);
 
     fetch('/api/hello/')
       .then((res) => {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();
       })
-      .then((j: HelloResponse) => {
-        setData(j);
-        setError(null);
-      })
-      .catch((err: Error) => {
-        setData(null);
-        setError(err.message);
-      })
+      .then((j: HelloResponse) => setData(j))
+      .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
@@ -52,6 +49,8 @@ function App() {
   }, [fetchHello]);
 
   const status: ConnectionStatus = loading ? 'loading' : error ? 'error' : 'connected';
+  const statusLabel =
+    status === 'loading' ? 'Checking…' : status === 'connected' ? 'Connected' : 'Unavailable';
 
   return (
     <div style={styles.page}>
@@ -77,34 +76,63 @@ function App() {
           </span>
         </div>
 
-        <div style={styles.section} aria-live="polite">
-          <div style={styles.sectionLabel}>Backend response</div>
-          {loading ? (
-            <div style={styles.loadingRow} role="status" aria-label="Loading backend response">
-              <span style={styles.spinner} aria-hidden="true" />
-              <span style={styles.meta}>Fetching from Django…</span>
-            </div>
-          ) : error ? (
-            <div>
-              <p style={styles.error} role="alert">
-                {error}
-              </p>
-              <button type="button" style={styles.retryButton} onClick={fetchHello}>
-                Retry
-              </button>
-            </div>
-          ) : data ? (
-            <div style={styles.responseContent}>
-              <p style={styles.message}>{data.message}</p>
-              <p style={styles.meta}>
-                v{data.version} · {formatTimestamp(data.timestamp)}
-              </p>
-            </div>
-          ) : null}
+        <div style={styles.section} aria-busy={loading}>
+          <div style={styles.sectionHeader}>
+            <div style={styles.sectionLabel}>Backend response</div>
+            <span
+              style={{
+                ...styles.statusBadge,
+                ...(status === 'loading'
+                  ? styles.statusLoading
+                  : status === 'connected'
+                    ? styles.statusConnected
+                    : styles.statusError),
+              }}
+              role="status"
+              aria-label={`Backend status: ${statusLabel}`}
+            >
+              <span
+                style={{
+                  ...styles.statusDot,
+                  background:
+                    status === 'loading'
+                      ? '#94a3b8'
+                      : status === 'connected'
+                        ? '#4ade80'
+                        : '#f87171',
+                }}
+                aria-hidden="true"
+              />
+              {statusLabel}
+            </span>
+          </div>
+
+          <div role="status" aria-live="polite" aria-atomic="true">
+            {loading ? (
+              <div style={styles.loadingRow}>
+                <span style={styles.spinner} aria-hidden="true" />
+                <span style={styles.meta}>Connecting to backend…</span>
+              </div>
+            ) : data ? (
+              <>
+                <p style={styles.message}>{data.message}</p>
+                <p style={styles.meta}>
+                  v{data.version} · {formatTimestamp(data.timestamp)}
+                </p>
+              </>
+            ) : (
+              <>
+                <p style={styles.error}>{error ?? 'Unable to reach the backend.'}</p>
+                <button type="button" style={styles.retryButton} onClick={fetchHello}>
+                  Retry
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         <div style={styles.footer}>
-          nginx serves this page · /api/* proxies to the Django sidecar on the same ECS
+          nginx serves this page — /api/* proxies to the Django sidecar on the same ECS
           task.
         </div>
       </div>
@@ -143,7 +171,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   h1: {
     margin: 0,
-    fontSize: 28,
+    fontSize: 'clamp(1.5rem, 4vw, 1.75rem)',
     fontWeight: 700,
   },
   subtitle: {
@@ -185,12 +213,65 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #1e293b',
     borderRadius: 8,
   },
+  sectionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 8,
+    flexWrap: 'wrap',
+  },
   sectionLabel: {
     fontSize: 11,
     letterSpacing: '0.12em',
     textTransform: 'uppercase',
     color: '#64748b',
-    marginBottom: 8,
+  },
+  statusBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: '0.04em',
+    padding: '4px 10px',
+    borderRadius: 999,
+    border: '1px solid transparent',
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: '50%',
+    flexShrink: 0,
+  },
+  statusLoading: {
+    color: '#94a3b8',
+    background: '#1e293b',
+    borderColor: '#334155',
+  },
+  statusConnected: {
+    color: '#86efac',
+    background: 'rgba(34, 197, 94, 0.12)',
+    borderColor: 'rgba(34, 197, 94, 0.35)',
+  },
+  statusError: {
+    color: '#fca5a5',
+    background: 'rgba(248, 113, 113, 0.12)',
+    borderColor: 'rgba(248, 113, 113, 0.35)',
+  },
+  loadingRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  spinner: {
+    width: 16,
+    height: 16,
+    border: '2px solid #334155',
+    borderTopColor: '#22d3ee',
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite',
+    flexShrink: 0,
   },
   loadingRow: {
     display: 'flex',
@@ -211,7 +292,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   message: {
     margin: 0,
-    fontSize: 20,
+    fontSize: 'clamp(1.125rem, 3vw, 1.25rem)',
     fontWeight: 600,
     color: '#22d3ee',
   },
@@ -227,16 +308,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   retryButton: {
     marginTop: 12,
-    padding: '8px 14px',
+    padding: '8px 16px',
     fontSize: 13,
     fontWeight: 600,
-    fontFamily: 'inherit',
-    color: '#f1f5f9',
-    background: '#1e293b',
-    border: '1px solid #334155',
+    color: '#0f172a',
+    background: '#22d3ee',
+    border: 'none',
     borderRadius: 6,
     cursor: 'pointer',
-    transition: 'background 0.15s ease, border-color 0.15s ease',
   },
   footer: {
     marginTop: 24,

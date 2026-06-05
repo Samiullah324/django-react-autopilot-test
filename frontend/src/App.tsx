@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { Footer } from './components/Footer';
+
 
 interface HelloResponse {
   message: string;
@@ -53,8 +55,9 @@ function App() {
     status === 'loading' ? 'Checking…' : status === 'connected' ? 'Connected' : 'Unavailable';
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
+    <div style={styles.shell}>
+      <div style={styles.page}>
+        <div style={styles.card}>
         <div style={styles.headerRow}>
           <div>
             <h1 style={styles.h1}>Django + React</h1>
@@ -130,20 +133,22 @@ function App() {
             )}
           </div>
         </div>
-
-        <div style={styles.footer}>
-          nginx serves this page — /api/* proxies to the Django sidecar on the same ECS
-          task.
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
 
 
 const styles: Record<string, React.CSSProperties> = {
-  page: {
+  shell: {
     minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  page: {
+    flex: 1,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -316,12 +321,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     borderRadius: 6,
     cursor: 'pointer',
-  },
-  footer: {
-    marginTop: 24,
-    fontSize: 11,
-    color: '#64748b',
-    lineHeight: 1.6,
   },
 };
 

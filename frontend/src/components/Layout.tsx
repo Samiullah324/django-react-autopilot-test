@@ -17,6 +17,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { Footer } from './Footer';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -90,6 +91,7 @@ export function Layout() {
         <main className="page">
           <Outlet />
         </main>
+        <Footer />
       </div>
     </div>
   );

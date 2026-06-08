@@ -254,14 +254,23 @@ textarea:focus-visible {
   flex: 1;
   margin-left: 260px;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
-.topbar {
+.navbar,
+.app-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4) var(--space-6);
   background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.navbar {
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
@@ -278,6 +287,39 @@ textarea:focus-visible {
 .topbar-greeting {
   color: var(--text-muted);
   font-size: var(--font-base);
+}
+
+.navbar-start,
+.navbar-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar-greeting {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.app-footer {
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.app-footer-brand {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.app-footer-text {
+  color: var(--text-muted);
+}
+
+.app-footer-copy {
+  margin-left: auto;
+  font-size: 13px;
 }
 
 .page {
@@ -868,5 +910,15 @@ tr:last-child td {
 
   .topbar {
     padding: var(--space-3) var(--space-4);
+  }
+
+  .navbar,
+  .app-footer {
+    padding: 12px 16px;
+  }
+
+  .app-footer-copy {
+    margin-left: 0;
+    width: 100%;
   }
 }

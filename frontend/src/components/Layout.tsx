@@ -4,19 +4,16 @@ import {
   Boxes,
   LayoutDashboard,
   LogOut,
-  Menu,
-  Moon,
   Package,
-  Sun,
   Truck,
   Warehouse,
-  X,
 } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { Footer } from './Footer';
+import { Navbar } from './Navbar';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -30,7 +27,6 @@ const navItems = [
 
 export function Layout() {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -97,6 +93,7 @@ export function Layout() {
         <main className="page">
           <Outlet />
         </main>
+        <Footer />
       </div>
     </div>
   );

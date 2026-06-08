@@ -11,6 +11,8 @@ User = get_user_model()
 
 
 class LoginView(TokenObtainPairView):
+    pass
+
 
 class RefreshView(TokenRefreshView):
     pass

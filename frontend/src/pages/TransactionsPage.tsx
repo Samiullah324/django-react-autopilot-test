@@ -27,7 +27,7 @@ export function TransactionsPage() {
           <h2>Transactions</h2>
           <p>Complete inventory transaction history</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="btn-group">
           <button className="btn btn-secondary" onClick={() => downloadFile('/api/transactions/export/?format=xlsx', 'transactions.xlsx')}>
             <Download size={16} /> Excel
           </button>
@@ -67,7 +67,7 @@ export function TransactionsPage() {
               {transactions.map((t) => (
                 <tr key={t.id}>
                   <td><span className="badge badge-neutral">{t.transaction_type_display}</span></td>
-                  <td>{t.product_name} <small style={{ color: 'var(--text-muted)' }}>({t.product_sku})</small></td>
+                  <td>{t.product_name} <small className="text-muted">({t.product_sku})</small></td>
                   <td>{t.warehouse_name}</td>
                   <td>{t.quantity > 0 ? '+' : ''}{t.quantity}</td>
                   <td>{t.previous_quantity} → {t.new_quantity}</td>

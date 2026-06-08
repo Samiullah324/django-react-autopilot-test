@@ -16,7 +16,7 @@ export function Modal({ title, open, onClose, children, footer }: ModalProps) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 style={{ margin: 0 }}>{title}</h3>
+          <h3 className="modal-title">{title}</h3>
           <button className="btn btn-icon btn-secondary" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>

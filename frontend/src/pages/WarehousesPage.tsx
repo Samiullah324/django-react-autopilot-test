@@ -46,7 +46,7 @@ export function WarehousesPage() {
         {warehouses.map((w) => (
           <div key={w.id} className="stat-card">
             <div className="stat-card-label">{w.location || 'No location'}</div>
-            <div className="stat-card-value" style={{ fontSize: 20 }}>{w.name}</div>
+            <div className="stat-card-value stat-card-value--md">{w.name}</div>
             <span className={`badge ${w.is_active ? 'badge-success' : 'badge-neutral'}`}>
               {w.is_active ? 'Active' : 'Inactive'}
             </span>

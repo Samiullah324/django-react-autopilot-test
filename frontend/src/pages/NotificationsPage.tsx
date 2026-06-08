@@ -49,21 +49,21 @@ export function NotificationsPage() {
         <div className="card-body">
           {notifications.length === 0 ? (
             <div className="empty-state">
-              <Bell size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
+              <Bell size={32} className="empty-state-icon" />
               <p>No notifications</p>
             </div>
           ) : (
             <div className="timeline">
               {notifications.map((n) => (
-                <div key={n.id} className="timeline-item" style={{ opacity: n.is_read ? 0.6 : 1 }}>
+                <div key={n.id} className={`timeline-item ${n.is_read ? 'timeline-item--muted' : ''}`}>
                   <div className="timeline-dot" />
-                  <div className="timeline-content" style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <h4 style={{ margin: 0 }}>{n.title}</h4>
+                  <div className="timeline-content">
+                    <div className="timeline-header">
+                      <h4>{n.title}</h4>
                       <span className={`badge ${tone(n.notification_type)}`}>{n.notification_type.replace('_', ' ')}</span>
                     </div>
                     <p>{n.message}</p>
-                    <small style={{ color: 'var(--text-muted)' }}>{new Date(n.created_at).toLocaleString()}</small>
+                    <small className="timeline-meta">{new Date(n.created_at).toLocaleString()}</small>
                   </div>
                   {!n.is_read && (
                     <button className="btn btn-secondary" onClick={() => markRead(n.id)}>Mark read</button>

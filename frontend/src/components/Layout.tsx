@@ -31,6 +31,13 @@ export function Layout() {
 
   return (
     <div className="app-shell">
+      {sidebarOpen && (
+        <div
+          className="sidebar-overlay visible"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
           <div className="sidebar-brand-icon">
@@ -66,7 +73,23 @@ export function Layout() {
       </aside>
 
       <div className="main-content">
-        <Navbar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
+        <header className="topbar">
+          <div className="topbar-left">
+            <button
+              className="btn btn-icon btn-secondary mobile-menu-btn"
+              onClick={() => setSidebarOpen((v) => !v)}
+              aria-label="Toggle menu"
+            >
+              {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+            <span className="topbar-greeting">
+              Welcome back{user?.first_name ? `, ${user.first_name}` : ''}
+            </span>
+          </div>
+          <button className="btn btn-icon btn-secondary" onClick={toggleTheme} aria-label="Toggle theme">
+            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+        </header>
         <main className="page">
           <Outlet />
         </main>

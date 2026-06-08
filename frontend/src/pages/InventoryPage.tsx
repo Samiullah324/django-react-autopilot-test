@@ -62,7 +62,7 @@ export function InventoryPage() {
           <h2>Inventory Tracking</h2>
           <p>Real-time stock levels and warehouse management</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="btn-group">
           <button className="btn btn-primary" onClick={() => openMove('stock_in')}>
             <ArrowDownCircle size={16} /> Stock In
           </button>
@@ -73,7 +73,7 @@ export function InventoryPage() {
       </div>
 
       {message && (
-        <div className={message.includes('success') ? 'badge badge-success' : 'error-banner'} style={{ marginBottom: 16 }}>
+        <div className={message.includes('success') ? 'success-banner' : 'error-banner'}>
           {message}
         </div>
       )}
@@ -139,7 +139,7 @@ export function InventoryPage() {
             <label>Reference #</label>
             <input value={form.reference_number} onChange={(e) => setForm({ ...form, reference_number: e.target.value })} />
           </div>
-          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+          <div className="form-group form-group--full">
             <label>Notes</label>
             <textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </div>

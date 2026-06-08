@@ -20,10 +20,18 @@ import {
 } from 'recharts';
 
 import { api } from '../api/client';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { StatCard } from '../components/StatCard';
 import type { DashboardData } from '../types';
 
-const CHART_COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
+const CHART_COLORS = [
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+  'var(--chart-6)',
+];
 
 const chartTooltipStyle = {
   background: 'var(--bg-elevated)',
@@ -52,7 +60,7 @@ export function DashboardPage() {
     return Array.from(map.entries()).map(([day, count]) => ({ day, count }));
   }, [data]);
 
-  if (loading) return <div className="empty-state">Loading dashboard...</div>;
+  if (loading) return <LoadingSpinner message="Loading dashboard..." />;
   if (!data) return <div className="empty-state">Unable to load dashboard.</div>;
 
   const { stats } = data;
@@ -77,7 +85,7 @@ export function DashboardPage() {
       <div className="grid-2">
         <div className="card">
           <div className="card-header">Products by Category</div>
-          <div className="card-body" style={{ height: 280 }}>
+          <div className="card-body card-body--chart">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -101,7 +109,7 @@ export function DashboardPage() {
 
         <div className="card">
           <div className="card-header">Transaction Activity (30 days)</div>
-          <div className="card-body" style={{ height: 280 }}>
+          <div className="card-body card-body--chart">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -115,7 +123,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 20 }}>
+      <div className="card card--spaced">
         <div className="card-header">Recent Activity</div>
         <div className="card-body">
           {data.recent_activity.length === 0 ? (

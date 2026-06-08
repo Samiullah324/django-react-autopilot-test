@@ -44,7 +44,7 @@ export function LoginPage() {
         <p className="subtitle">Sign in to manage your inventory</p>
         {error && <div className="error-banner">{error}</div>}
         <form onSubmit={handleSubmit}>
-          <div className="form-group" style={{ marginBottom: 16 }}>
+          <div className="form-group form-group--spaced">
             <label htmlFor="username">Username</label>
             <input
               id="username"
@@ -54,7 +54,7 @@ export function LoginPage() {
               required
             />
           </div>
-          <div className="form-group" style={{ marginBottom: 24 }}>
+          <div className="form-group form-group--spaced-lg">
             <label htmlFor="password">Password</label>
             <input
               id="password"
@@ -65,11 +65,11 @@ export function LoginPage() {
               required
             />
           </div>
-          <button className="btn btn-primary" type="submit" disabled={submitting} style={{ width: '100%' }}>
+          <button className="btn btn-primary btn-full" type="submit" disabled={submitting}>
             {submitting ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-        <p style={{ marginTop: 20, fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+        <p className="login-hint">
           Demo: admin / admin12345
         </p>
       </div>

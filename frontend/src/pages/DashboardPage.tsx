@@ -25,6 +25,13 @@ import type { DashboardData } from '../types';
 
 const CHART_COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
 
+const chartTooltipStyle = {
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border)',
+  borderRadius: '8px',
+  color: 'var(--text)',
+};
+
 export function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,7 +93,7 @@ export function DashboardPage() {
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={chartTooltipStyle} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -100,7 +107,7 @@ export function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="var(--text-muted)" />
                 <YAxis tick={{ fontSize: 11 }} stroke="var(--text-muted)" />
-                <Tooltip />
+                <Tooltip contentStyle={chartTooltipStyle} />
                 <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

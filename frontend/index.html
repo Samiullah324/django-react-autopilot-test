@@ -7,7 +7,20 @@
       name="description"
       content="Sunset Autopilot preview deploy target — Django API with React frontend."
     />
-    <title>Django + React Autopilot Test</title>
+    <title>StockFlow — Inventory Management</title>
+    <script>
+      (function () {
+        var key = 'inventory_theme';
+        var theme;
+        try {
+          theme = localStorage.getItem(key);
+        } catch (e) {}
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
     <style>
       @keyframes spin {
         to {

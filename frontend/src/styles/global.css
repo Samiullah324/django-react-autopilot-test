@@ -1,5 +1,6 @@
 :root,
 [data-theme='light'] {
+  color-scheme: light;
   --bg: #f4f6fb;
   --bg-elevated: #ffffff;
   --bg-subtle: #eef1f8;
@@ -21,9 +22,13 @@
   --shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.06);
   --radius: 12px;
   --radius-sm: 8px;
+  --login-bg-start: #f4f6fb;
+  --login-bg-mid: #e8ecf4;
+  --login-bg-end: #dde3f0;
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
   --bg: #0b1220;
   --bg-elevated: #111827;
   --bg-subtle: #1f2937;
@@ -43,6 +48,9 @@
   --sidebar-text: #94a3b8;
   --sidebar-active: #ffffff;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  --login-bg-start: #0f172a;
+  --login-bg-mid: #1e1b4b;
+  --login-bg-end: #312e81;
 }
 
 * {
@@ -443,7 +451,19 @@ tr:hover td {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+  background: linear-gradient(
+    135deg,
+    var(--login-bg-start) 0%,
+    var(--login-bg-mid) 50%,
+    var(--login-bg-end) 100%
+  );
+}
+
+.login-theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
 }
 
 .login-card {

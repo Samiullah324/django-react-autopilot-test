@@ -102,7 +102,7 @@ export function SuppliersPage() {
                   <td>{s.product_count}</td>
                   {isManager && (
                     <td>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div className="btn-group">
                         <button className="btn btn-secondary" onClick={() => openEdit(s)}>Edit</button>
                         <button className="btn btn-danger btn-icon" onClick={() => handleDelete(s.id)}>
                           <Trash2 size={16} />
@@ -145,7 +145,7 @@ export function SuppliersPage() {
             <label>Phone</label>
             <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           </div>
-          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+          <div className="form-group form-group--full">
             <label>Address</label>
             <textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
           </div>

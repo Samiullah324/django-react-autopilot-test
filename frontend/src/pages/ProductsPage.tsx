@@ -3,6 +3,7 @@ import { downloadFile } from '../utils/download';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { api } from '../api/client';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Modal } from '../components/Modal';
 import { StockBadge } from '../components/StockBadge';
 import { useAuth } from '../context/AuthContext';
@@ -127,7 +128,7 @@ export function ProductsPage() {
           <p>Manage product catalog, pricing, and stock thresholds</p>
         </div>
         {isManager && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="btn-group">
             <button className="btn btn-secondary" onClick={() => downloadFile('/api/products/export/?format=csv', 'products.csv')}>
               <Download size={16} /> Export CSV
             </button>
@@ -143,10 +144,10 @@ export function ProductsPage() {
       </div>
 
       <div className="filters-bar">
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <Search size={16} style={{ position: 'absolute', left: 12, top: 11, color: 'var(--text-muted)' }} />
+        <div className="search-field">
+          <Search size={16} className="search-field-icon" />
           <input
-            style={{ paddingLeft: 36, width: '100%' }}
+            className="search-input"
             placeholder="Search by name, SKU, or barcode..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -163,7 +164,7 @@ export function ProductsPage() {
       <div className="card">
         <div className="table-wrap">
           {loading ? (
-            <div className="empty-state">Loading products...</div>
+            <LoadingSpinner message="Loading products..." />
           ) : (
             <table>
               <thead>
@@ -188,7 +189,7 @@ export function ProductsPage() {
                     <td><StockBadge status={p.stock_status} /></td>
                     {isManager && (
                       <td>
-                        <div style={{ display: 'flex', gap: 8 }}>
+                        <div className="btn-group">
                           <button className="btn btn-secondary" onClick={() => openEdit(p)}>Edit</button>
                           <button className="btn btn-danger btn-icon" onClick={() => handleDelete(p.id)}>
                             <Trash2 size={16} />
@@ -250,7 +251,7 @@ export function ProductsPage() {
             <label>Low Stock Threshold</label>
             <input type="number" value={form.low_stock_threshold} onChange={(e) => setForm({ ...form, low_stock_threshold: e.target.value })} />
           </div>
-          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+          <div className="form-group form-group--full">
             <label>Description</label>
             <textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </div>

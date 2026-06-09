@@ -2,8 +2,10 @@ import {
   ArrowLeftRight,
   Bell,
   Boxes,
+  Info,
   LayoutDashboard,
   LogOut,
+  Mail,
   Package,
   Truck,
   Warehouse,
@@ -15,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { Footer } from './Footer';
 import { Navbar } from './Navbar';
 
-const navItems = [
+const primaryNavItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/products', icon: Package, label: 'Products' },
   { to: '/inventory', icon: Boxes, label: 'Inventory' },
@@ -23,6 +25,11 @@ const navItems = [
   { to: '/warehouses', icon: Warehouse, label: 'Warehouses' },
   { to: '/transactions', icon: ArrowLeftRight, label: 'Transactions' },
   { to: '/notifications', icon: Bell, label: 'Notifications' },
+];
+
+const secondaryNavItems = [
+  { to: '/about-us', icon: Info, label: 'About Us' },
+  { to: '/contact-us', icon: Mail, label: 'Contact Us' },
 ];
 
 export function Layout() {
@@ -49,11 +56,23 @@ export function Layout() {
           </div>
         </div>
         <nav className="nav-list">
-          {navItems.map(({ to, icon: Icon, label }) => (
+          {primaryNavItems.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
               end={to === '/'}
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+              onClick={() => setSidebarOpen(false)}
+            >
+              <Icon size={18} />
+              {label}
+            </NavLink>
+          ))}
+          <div className="nav-divider" />
+          {secondaryNavItems.map(({ to, icon: Icon, label }) => (
+            <NavLink
+              key={to}
+              to={to}
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               onClick={() => setSidebarOpen(false)}
             >

@@ -4,6 +4,8 @@ import { Layout } from './components/Layout';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { AboutUsPage } from './pages/AboutUsPage';
+import { ContactUsPage } from './pages/ContactUsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { LoginPage } from './pages/LoginPage';
@@ -44,6 +46,8 @@ function AppRoutes() {
         <Route path="warehouses" element={<WarehousesPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="about-us" element={<AboutUsPage />} />
+        <Route path="contact-us" element={<ContactUsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

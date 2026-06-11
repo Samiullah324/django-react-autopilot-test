@@ -12,7 +12,7 @@ If you find a bug or something isn't working as expected, please [open an issue 
 
 ## Getting Help
 
-For questions, setup help, or general discussion, use [GitHub Discussions](https://github.com/Samiullah324/django-react-autopilot-test/discussions) or [open an issue](https://github.com/Samiullah324/django-react-autopilot-test/issues). Search existing threads first—you may find your answer already covered.
+For questions, setup help, or general discussion, use [GitHub Discussions](https://github.com/Samiullah324/django-react-autopilot-test/discussions). Search existing threads first—you may find your answer already covered.
 
 ## Documentation
 

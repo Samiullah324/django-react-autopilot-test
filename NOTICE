@@ -1,0 +1,7 @@
+Django + React Autopilot Test
+
+This project is a full-stack inventory management application built with Django and React. It is maintained by the project contributors and is used to validate Sunset Autopilot preview deployments.
+
+Copyright (c) 2026 Django + React Autopilot Test contributors. All rights reserved.
+
+This software incorporates the Django web framework (https://www.djangoproject.com/) and the React library (https://react.dev/), along with other open source components listed in the project's dependency manifests.

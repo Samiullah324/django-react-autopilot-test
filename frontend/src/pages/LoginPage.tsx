@@ -1,14 +1,12 @@
-import { Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 
 export function LoginPage() {
   const { login, user, loading } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('admin12345');
   const [error, setError] = useState('');
@@ -31,14 +29,7 @@ export function LoginPage() {
 
   return (
     <div className="login-page">
-      <button
-        type="button"
-        className="btn btn-icon btn-secondary login-theme-toggle"
-        onClick={toggleTheme}
-        aria-label="Toggle theme"
-      >
-        {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-      </button>
+      <ThemeToggle className="login-theme-toggle" />
       <div className="login-card">
         <h1>StockFlow</h1>
         <p className="subtitle">Sign in to manage your inventory</p>

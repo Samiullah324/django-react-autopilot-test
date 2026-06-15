@@ -1,7 +1,7 @@
-import { Menu, Moon, Sun, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { ThemeToggle } from './ThemeToggle';
 
 interface NavbarProps {
   sidebarOpen: boolean;
@@ -10,7 +10,6 @@ interface NavbarProps {
 
 export function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="navbar">
@@ -27,9 +26,7 @@ export function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
         </span>
       </div>
       <div className="navbar-end">
-        <button className="btn btn-icon btn-secondary" onClick={toggleTheme} aria-label="Toggle theme">
-          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-        </button>
+        <ThemeToggle />
       </div>
     </header>
   );

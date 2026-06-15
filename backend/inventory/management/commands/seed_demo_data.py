@@ -24,7 +24,12 @@ class Command(BaseCommand):
         if created:
             admin.set_password('admin12345')
             admin.save()
-            self.stdout.write('Created admin user (admin / admin12345)')
+            self.stdout.write(
+                self.style.WARNING(
+                    'DEV ONLY: Created demo admin user (admin / admin12345). '
+                    'Do not use in production.'
+                )
+            )
 
         manager, _ = User.objects.get_or_create(
             username='manager',

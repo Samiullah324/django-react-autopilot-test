@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -10,6 +11,7 @@ VALID_PASSWORD = 'SecurePass1'
 
 class AuthAPITestCase(TestCase):
     def setUp(self):
+        cache.clear()
         self.client = APIClient()
         self.register_url = '/api/auth/register/'
         self.login_url = '/api/auth/login/'
@@ -45,6 +47,23 @@ class AuthAPITestCase(TestCase):
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
         self.assertEqual(user.role, User.Role.STAFF)
+        self.assertEqual(user.email, 'new@example.com')
+
+    def test_registration_normalizes_email(self):
+        response = self.client.post(
+            self.register_url,
+            {
+                'username': 'mixedcase',
+                'email': 'Mixed@Example.COM',
+                'password': VALID_PASSWORD,
+                'password_confirm': VALID_PASSWORD,
+                'first_name': 'Mix',
+                'last_name': 'Case',
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(User.objects.get(username='mixedcase').email, 'mixed@example.com')
 
     def test_registration_duplicate_email(self):
         self.register_user()
@@ -92,10 +111,18 @@ class AuthAPITestCase(TestCase):
         response = self.login(username='new@example.com')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_login_invalid_credentials(self):
+    def test_login_invalid_credentials_generic_message(self):
         self.register_user()
         response = self.login(password='WrongPass1')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data['detail'], 'Unable to log in with provided credentials.')
+
+        unknown_email = self.login(username='nobody@example.com')
+        self.assertEqual(unknown_email.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            unknown_email.data['detail'],
+            'Unable to log in with provided credentials.',
+        )
 
     def test_user_endpoint_requires_auth(self):
         response = self.client.get(self.user_url)
@@ -122,7 +149,25 @@ class AuthAPITestCase(TestCase):
         self.assertEqual(response.data['first_name'], 'Updated')
         self.assertEqual(response.data['phone'], '555-0100')
 
-    def test_change_password(self):
+    def test_update_profile_rejects_duplicate_email(self):
+        self.register_user()
+        User.objects.create_user(
+            username='other',
+            email='taken@example.com',
+            password=VALID_PASSWORD,
+            role=User.Role.STAFF,
+        )
+        tokens = self.login().data
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {tokens["access"]}')
+        response = self.client.patch(
+            self.user_url,
+            {'email': 'taken@example.com'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('email', response.data)
+
+    def test_change_password_invalidates_existing_tokens(self):
         self.register_user()
         tokens = self.login().data
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {tokens["access"]}')
@@ -137,23 +182,63 @@ class AuthAPITestCase(TestCase):
             format='json',
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.client.credentials()
-        login_response = self.login(password=new_password)
-        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
 
-    def test_logout_blacklists_refresh_token(self):
-        self.register_user()
-        tokens = self.login().data
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {tokens["access"]}')
-        response = self.client.post(
-            self.logout_url,
-            {'refresh': tokens['refresh']},
-            format='json',
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user_response = self.client.get(self.user_url)
+        self.assertEqual(user_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
         refresh_response = self.client.post(
             '/api/auth/refresh/',
             {'refresh': tokens['refresh']},
             format='json',
         )
         self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.client.credentials()
+        login_response = self.login(password=new_password)
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+
+    def test_logout_blacklists_refresh_and_access_tokens(self):
+        self.register_user()
+        tokens = self.login().data
+        access_token = tokens['access']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+        response = self.client.post(
+            self.logout_url,
+            {'refresh': tokens['refresh']},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        refresh_response = self.client.post(
+            '/api/auth/refresh/',
+            {'refresh': tokens['refresh']},
+            format='json',
+        )
+        self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+        user_response = self.client.get(self.user_url)
+        self.assertEqual(user_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_logout_rejects_refresh_token_for_other_user(self):
+        self.register_user()
+        tokens = self.login().data
+        other = User.objects.create_user(
+            username='other',
+            email='other@example.com',
+            password=VALID_PASSWORD,
+            role=User.Role.STAFF,
+        )
+        other_tokens = self.client.post(
+            self.login_url,
+            {'username': 'other', 'password': VALID_PASSWORD},
+            format='json',
+        ).data
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {tokens["access"]}')
+        response = self.client.post(
+            self.logout_url,
+            {'refresh': other_tokens['refresh']},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

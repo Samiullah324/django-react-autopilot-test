@@ -1,32 +1,60 @@
+/**
+ * JWT token storage uses localStorage/sessionStorage (not httpOnly cookies).
+ *
+ * SECURITY NOTE: Browser storage is readable by any script on the page, so a
+ * successful XSS attack could exfiltrate tokens. Mitigations in this project:
+ * - Content-Security-Policy headers (Django middleware + nginx) restrict script sources
+ * - JWT is sent via Authorization header (not cookies), so CSRF does not apply to API auth
+ * - Tokens are cleared on logout and after password change
+ *
+ * httpOnly cookies would be preferable for production hardening but require
+ * cookie-based auth, CSRF tokens, and CORS credential changes across the stack.
+ */
 const TOKEN_KEY = 'inventory_access_token';
 const REFRESH_KEY = 'inventory_refresh_token';
 const STORAGE_TYPE_KEY = 'inventory_token_storage';
 
 type StorageType = 'local' | 'session';
 
-function getActiveStorage(): Storage {
-  const type = (localStorage.getItem(STORAGE_TYPE_KEY) as StorageType) || 'local';
+function getValidatedStorageType(): StorageType | null {
+  const type = localStorage.getItem(STORAGE_TYPE_KEY);
+  if (type !== 'local' && type !== 'session') {
+    return null;
+  }
+  return type;
+}
+
+function getActiveStorage(): Storage | null {
+  const type = getValidatedStorageType();
+  if (!type) {
+    return null;
+  }
   return type === 'session' ? sessionStorage : localStorage;
 }
 
 function getRefreshToken(): string | null {
-  return getActiveStorage().getItem(REFRESH_KEY) || localStorage.getItem(REFRESH_KEY) || sessionStorage.getItem(REFRESH_KEY);
+  const storage = getActiveStorage();
+  if (!storage) {
+    return null;
+  }
+  return storage.getItem(REFRESH_KEY);
 }
 
 export function getToken(): string | null {
-  return getActiveStorage().getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+  const storage = getActiveStorage();
+  if (!storage) {
+    return null;
+  }
+  return storage.getItem(TOKEN_KEY);
 }
 
 export { getRefreshToken };
 
 export function setTokens(access: string, refresh: string, remember = true) {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_KEY);
-  sessionStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(REFRESH_KEY);
-
-  const storage = remember ? localStorage : sessionStorage;
-  localStorage.setItem(STORAGE_TYPE_KEY, remember ? 'local' : 'session');
+  clearTokens();
+  const storageType: StorageType = remember ? 'local' : 'session';
+  localStorage.setItem(STORAGE_TYPE_KEY, storageType);
+  const storage = storageType === 'session' ? sessionStorage : localStorage;
   storage.setItem(TOKEN_KEY, access);
   storage.setItem(REFRESH_KEY, refresh);
 }
@@ -80,9 +108,20 @@ function formatErrorMessage(data: unknown, status: number): string {
   return `Request failed (${status})`;
 }
 
-async function refreshAccessToken(): Promise<string | null> {
+let refreshPromise: Promise<string | null> | null = null;
+
+async function performRefreshAccessToken(): Promise<string | null> {
+  const storageType = localStorage.getItem(STORAGE_TYPE_KEY);
+  if (storageType !== 'local' && storageType !== 'session') {
+    clearTokens();
+    return null;
+  }
+
   const refresh = getRefreshToken();
-  if (!refresh) return null;
+  if (!refresh) {
+    clearTokens();
+    return null;
+  }
 
   const res = await fetch('/api/auth/refresh/', {
     method: 'POST',
@@ -96,16 +135,26 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 
   const data = await res.json();
-  if (data.access) {
-    const remember = localStorage.getItem(STORAGE_TYPE_KEY) !== 'session';
-    const storage = remember ? localStorage : sessionStorage;
-    storage.setItem(TOKEN_KEY, data.access);
-    if (data.refresh) {
-      storage.setItem(REFRESH_KEY, data.refresh);
-    }
-    return data.access;
+  if (!data.access) {
+    clearTokens();
+    return null;
   }
-  return null;
+
+  const storage = storageType === 'session' ? sessionStorage : localStorage;
+  storage.setItem(TOKEN_KEY, data.access);
+  if (data.refresh) {
+    storage.setItem(REFRESH_KEY, data.refresh);
+  }
+  return data.access;
+}
+
+function refreshAccessToken(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = performRefreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
 }
 
 export async function apiRequest<T>(

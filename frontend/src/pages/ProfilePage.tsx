@@ -1,17 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
+import { isStrongPassword, PASSWORD_HINT } from '../constants/validation';
 import { useAuth } from '../context/AuthContext';
-
-const PASSWORD_HINT =
-  'At least 8 characters with one uppercase letter, one lowercase letter, and one number.';
-
-function isStrongPassword(value: string) {
-  return /[A-Z]/.test(value) && /[a-z]/.test(value) && /\d/.test(value) && value.length >= 8;
-}
 
 export function ProfilePage() {
   const { user, updateProfile, changePassword } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState({
     email: user?.email || '',
     first_name: user?.first_name || '',
@@ -62,8 +58,9 @@ export function ProfilePage() {
     setSavingPassword(true);
     try {
       await changePassword(passwords);
-      setPasswordSuccess('Password changed successfully.');
+      setPasswordSuccess('Password changed successfully. Please sign in again.');
       setPasswords({ current_password: '', new_password: '', new_password_confirm: '' });
+      navigate('/login');
     } catch (err) {
       setPasswordError(err instanceof ApiError ? err.message : 'Failed to change password.');
     } finally {

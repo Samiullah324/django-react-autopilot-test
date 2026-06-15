@@ -91,6 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const changePassword = async (data: ChangePasswordPayload) => {
     await api.changePassword(data);
+    clearTokens();
+    setUser(null);
   };
 
   const value = useMemo(

@@ -3,18 +3,12 @@ import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
+import { isStrongPassword, PASSWORD_HINT } from '../constants/validation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
-const PASSWORD_HINT =
-  'At least 8 characters with one uppercase letter, one lowercase letter, and one number.';
-
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function isStrongPassword(value: string) {
-  return /[A-Z]/.test(value) && /[a-z]/.test(value) && /\d/.test(value) && value.length >= 8;
 }
 
 export function SignUpPage() {

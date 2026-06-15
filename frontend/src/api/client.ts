@@ -1,33 +1,87 @@
 const TOKEN_KEY = 'inventory_access_token';
 const REFRESH_KEY = 'inventory_refresh_token';
+const STORAGE_TYPE_KEY = 'inventory_token_storage';
 
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+type StorageType = 'local' | 'session';
+
+function getActiveStorage(): Storage {
+  const type = (localStorage.getItem(STORAGE_TYPE_KEY) as StorageType) || 'local';
+  return type === 'session' ? sessionStorage : localStorage;
 }
 
-export function setTokens(access: string, refresh: string) {
-  localStorage.setItem(TOKEN_KEY, access);
-  localStorage.setItem(REFRESH_KEY, refresh);
+function getRefreshToken(): string | null {
+  return getActiveStorage().getItem(REFRESH_KEY) || localStorage.getItem(REFRESH_KEY) || sessionStorage.getItem(REFRESH_KEY);
+}
+
+export function getToken(): string | null {
+  return getActiveStorage().getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+}
+
+export { getRefreshToken };
+
+export function setTokens(access: string, refresh: string, remember = true) {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(REFRESH_KEY);
+
+  const storage = remember ? localStorage : sessionStorage;
+  localStorage.setItem(STORAGE_TYPE_KEY, remember ? 'local' : 'session');
+  storage.setItem(TOKEN_KEY, access);
+  storage.setItem(REFRESH_KEY, refresh);
 }
 
 export function clearTokens() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(REFRESH_KEY);
+  localStorage.removeItem(STORAGE_TYPE_KEY);
 }
 
 export class ApiError extends Error {
   status: number;
   data: unknown;
+  fieldErrors: Record<string, string[]>;
 
   constructor(status: number, message: string, data?: unknown) {
     super(message);
     this.status = status;
     this.data = data;
+    this.fieldErrors = ApiError.extractFieldErrors(data);
+  }
+
+  static extractFieldErrors(data: unknown): Record<string, string[]> {
+    if (!data || typeof data !== 'object') return {};
+    const errors: Record<string, string[]> = {};
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      if (key === 'detail') continue;
+      if (Array.isArray(value)) {
+        errors[key] = value.map(String);
+      } else if (typeof value === 'string') {
+        errors[key] = [value];
+      }
+    }
+    return errors;
   }
 }
 
+function formatErrorMessage(data: unknown, status: number): string {
+  if (typeof data === 'object' && data) {
+    if ('detail' in data) {
+      const detail = (data as { detail: unknown }).detail;
+      if (typeof detail === 'string') return detail;
+      if (Array.isArray(detail)) return detail.map(String).join(' ');
+    }
+    const fieldErrors = ApiError.extractFieldErrors(data);
+    const messages = Object.values(fieldErrors).flat();
+    if (messages.length) return messages.join(' ');
+  }
+  return `Request failed (${status})`;
+}
+
 async function refreshAccessToken(): Promise<string | null> {
-  const refresh = localStorage.getItem(REFRESH_KEY);
+  const refresh = getRefreshToken();
   if (!refresh) return null;
 
   const res = await fetch('/api/auth/refresh/', {
@@ -43,7 +97,12 @@ async function refreshAccessToken(): Promise<string | null> {
 
   const data = await res.json();
   if (data.access) {
-    localStorage.setItem(TOKEN_KEY, data.access);
+    const remember = localStorage.getItem(STORAGE_TYPE_KEY) !== 'session';
+    const storage = remember ? localStorage : sessionStorage;
+    storage.setItem(TOKEN_KEY, data.access);
+    if (data.refresh) {
+      storage.setItem(REFRESH_KEY, data.refresh);
+    }
     return data.access;
   }
   return null;
@@ -78,24 +137,68 @@ export async function apiRequest<T>(
   const data = isJson ? await response.json() : await response.text();
 
   if (!response.ok) {
-    const message =
-      typeof data === 'object' && data && 'detail' in data
-        ? String((data as { detail: string }).detail)
-        : `Request failed (${response.status})`;
-    throw new ApiError(response.status, message, data);
+    throw new ApiError(response.status, formatErrorMessage(data, response.status), data);
   }
 
   return data as T;
 }
 
+export interface RegisterPayload {
+  username: string;
+  email: string;
+  password: string;
+  password_confirm: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface ProfileUpdatePayload {
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+}
+
+export interface ChangePasswordPayload {
+  current_password: string;
+  new_password: string;
+  new_password_confirm: string;
+}
+
 export const api = {
+  register: (data: RegisterPayload) =>
+    apiRequest<import('../types').User>('/api/auth/register/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   login: (username: string, password: string) =>
     apiRequest<{ access: string; refresh: string }>('/api/auth/login/', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     }),
 
-  me: () => apiRequest<import('../types').User>('/api/auth/me/'),
+  logout: (refresh: string) =>
+    apiRequest<{ detail: string }>('/api/auth/logout/', {
+      method: 'POST',
+      body: JSON.stringify({ refresh }),
+    }),
+
+  getCurrentUser: () => apiRequest<import('../types').User>('/api/auth/user/'),
+
+  me: () => apiRequest<import('../types').User>('/api/auth/user/'),
+
+  updateUser: (data: ProfileUpdatePayload) =>
+    apiRequest<import('../types').User>('/api/auth/user/', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  changePassword: (data: ChangePasswordPayload) =>
+    apiRequest<{ detail: string }>('/api/auth/change-password/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   dashboard: () => apiRequest<import('../types').DashboardData>('/api/dashboard/'),
 

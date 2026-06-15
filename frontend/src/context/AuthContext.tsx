@@ -8,14 +8,26 @@ import {
   type ReactNode,
 } from 'react';
 
-import { api, clearTokens, getToken, setTokens } from '../api/client';
+import {
+  api,
+  clearTokens,
+  getRefreshToken,
+  getToken,
+  setTokens,
+  type ChangePasswordPayload,
+  type ProfileUpdatePayload,
+  type RegisterPayload,
+} from '../api/client';
 import type { User } from '../types';
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  login: (username: string, password: string, remember?: boolean) => Promise<void>;
+  register: (data: RegisterPayload) => Promise<void>;
+  logout: () => Promise<void>;
+  updateProfile: (data: ProfileUpdatePayload) => Promise<void>;
+  changePassword: (data: ChangePasswordPayload) => Promise<void>;
   isManager: boolean;
   isAdmin: boolean;
 }
@@ -33,8 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     try {
-      const me = await api.me();
-      setUser(me);
+      const currentUser = await api.getCurrentUser();
+      setUser(currentUser);
     } catch {
       clearTokens();
       setUser(null);
@@ -47,16 +59,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser();
   }, [loadUser]);
 
-  const login = async (username: string, password: string) => {
+  const login = async (username: string, password: string, remember = true) => {
     const tokens = await api.login(username, password);
-    setTokens(tokens.access, tokens.refresh);
-    const me = await api.me();
-    setUser(me);
+    setTokens(tokens.access, tokens.refresh, remember);
+    const currentUser = await api.getCurrentUser();
+    setUser(currentUser);
   };
 
-  const logout = () => {
-    clearTokens();
-    setUser(null);
+  const register = async (data: RegisterPayload) => {
+    await api.register(data);
+  };
+
+  const logout = async () => {
+    const refresh = getRefreshToken();
+    try {
+      if (refresh && getToken()) {
+        await api.logout(refresh);
+      }
+    } catch {
+      // Clear local session even if server logout fails
+    } finally {
+      clearTokens();
+      setUser(null);
+    }
+  };
+
+  const updateProfile = async (data: ProfileUpdatePayload) => {
+    const updated = await api.updateUser(data);
+    setUser(updated);
+  };
+
+  const changePassword = async (data: ChangePasswordPayload) => {
+    await api.changePassword(data);
   };
 
   const value = useMemo(
@@ -64,7 +98,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       loading,
       login,
+      register,
       logout,
+      updateProfile,
+      changePassword,
       isManager: user?.role === 'admin' || user?.role === 'manager',
       isAdmin: user?.role === 'admin',
     }),

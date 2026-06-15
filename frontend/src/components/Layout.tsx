@@ -6,10 +6,11 @@ import {
   LogOut,
   Package,
   Truck,
+  UserCircle,
   Warehouse,
 } from 'lucide-react';
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
 import { Footer } from './Footer';
@@ -23,11 +24,18 @@ const navItems = [
   { to: '/warehouses', icon: Warehouse, label: 'Warehouses' },
   { to: '/transactions', icon: ArrowLeftRight, label: 'Transactions' },
   { to: '/notifications', icon: Bell, label: 'Notifications' },
+  { to: '/profile', icon: UserCircle, label: 'Profile' },
 ];
 
 export function Layout() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <div className="app-shell">
@@ -66,7 +74,7 @@ export function Layout() {
           <div className="sidebar-user">
             {user?.username} · {user?.role}
           </div>
-          <button className="btn btn-secondary btn-full" onClick={logout}>
+          <button className="btn btn-secondary btn-full" onClick={handleLogout}>
             <LogOut size={16} /> Sign out
           </button>
         </div>

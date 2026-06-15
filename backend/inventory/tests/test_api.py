@@ -66,6 +66,68 @@ class InventoryAPITestCase(TestCase):
             'low_stock_threshold': 10,
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], 'New Product')
+        self.assertEqual(response.data['sku'], 'NP-001')
+
+    def test_list_products(self):
+        self.authenticate(self.staff)
+        response = self.client.get('/api/products/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['sku'], 'TW-001')
+        self.assertIn('total_quantity', response.data['results'][0])
+        self.assertIn('stock_status', response.data['results'][0])
+
+    def test_retrieve_product(self):
+        self.authenticate(self.staff)
+        response = self.client.get(f'/api/products/{self.product.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], 'Test Widget')
+        self.assertIn('stock_levels', response.data)
+        self.assertIn('description', response.data)
+
+    def test_update_product_as_manager(self):
+        self.authenticate(self.admin)
+        response = self.client.patch(f'/api/products/{self.product.id}/', {
+            'name': 'Updated Widget',
+            'price': '24.99',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.name, 'Updated Widget')
+        self.assertEqual(self.product.price, Decimal('24.99'))
+
+    def test_delete_product_as_manager(self):
+        self.authenticate(self.admin)
+        response = self.client.delete(f'/api/products/{self.product.id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Product.objects.filter(pk=self.product.id).exists())
+
+    def test_staff_cannot_delete_product(self):
+        self.authenticate(self.staff)
+        response = self.client.delete(f'/api/products/{self.product.id}/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(Product.objects.filter(pk=self.product.id).exists())
+
+    def test_create_product_duplicate_sku_rejected(self):
+        self.authenticate(self.admin)
+        response = self.client.post('/api/products/', {
+            'name': 'Duplicate SKU Product',
+            'sku': 'TW-001',
+            'price': '5.00',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('sku', response.data)
+
+    def test_create_product_negative_price_rejected(self):
+        self.authenticate(self.admin)
+        response = self.client.post('/api/products/', {
+            'name': 'Bad Price',
+            'sku': 'BP-001',
+            'price': '-1.00',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('price', response.data)
 
     def test_staff_cannot_create_product(self):
         self.authenticate(self.staff)

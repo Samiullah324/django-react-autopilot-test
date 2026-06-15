@@ -108,6 +108,33 @@ class ProductWriteSerializer(serializers.ModelSerializer):
             'low_stock_threshold', 'description', 'image', 'expiry_date', 'is_active',
         )
 
+    def validate_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Name is required.')
+        return value
+
+    def validate_sku(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('SKU is required.')
+        qs = Product.objects.filter(sku__iexact=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('A product with this SKU already exists.')
+        return value
+
+    def validate_price(self, value):
+        if value < 0:
+            raise serializers.ValidationError('Price cannot be negative.')
+        return value
+
+    def validate_low_stock_threshold(self, value):
+        if value < 0:
+            raise serializers.ValidationError('Low stock threshold cannot be negative.')
+        return value
+
 
 class StockMovementSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()

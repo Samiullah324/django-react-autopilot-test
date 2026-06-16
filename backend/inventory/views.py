@@ -109,6 +109,54 @@ class WarehouseViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
 
+class InventoryViewSet(viewsets.ModelViewSet):
+    """Inventory product CRUD at /api/inventory/."""
+
+    queryset = Product.objects.select_related('category', 'supplier').prefetch_related(
+        'stock_levels__warehouse',
+    )
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ProductFilter
+    permission_classes = [IsStaffOrAbove]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return ProductDetailSerializer
+        if self.action in ('create', 'update', 'partial_update'):
+            return ProductWriteSerializer
+        return ProductListSerializer
+
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [IsManagerOrAdmin()]
+        return super().get_permissions()
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        stock_status = self.request.query_params.get('stock_status')
+        if not stock_status:
+            return qs
+
+        annotated = qs.annotate(total_qty=Sum('stock_levels__quantity'))
+        if stock_status == 'out_of_stock':
+            return annotated.filter(total_qty=0) | annotated.filter(total_qty__isnull=True)
+        if stock_status == 'low_stock':
+            return annotated.filter(total_qty__gt=0, total_qty__lte=F('low_stock_threshold'))
+        if stock_status == 'in_stock':
+            return annotated.filter(total_qty__gt=F('low_stock_threshold'))
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        if isinstance(response.data, dict) and 'results' in response.data:
+            for item in response.data['results']:
+                product = Product.objects.get(pk=item['id'])
+                item['total_quantity'] = product.total_quantity
+                item['stock_status'] = product.stock_status
+        return response
+
+
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.select_related('category', 'supplier').prefetch_related(
         'stock_levels__warehouse',

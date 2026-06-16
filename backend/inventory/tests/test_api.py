@@ -111,3 +111,67 @@ class InventoryAPITestCase(TestCase):
         self.authenticate(self.staff)
         response = self.client.get('/api/suppliers/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_list_inventory(self):
+        self.authenticate(self.staff)
+        response = self.client.get('/api/inventory/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['sku'], 'TW-001')
+
+    def test_retrieve_inventory_item(self):
+        self.authenticate(self.staff)
+        response = self.client.get(f'/api/inventory/{self.product.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], 'Test Widget')
+
+    def test_create_inventory_item_as_manager(self):
+        self.authenticate(self.admin)
+        response = self.client.post('/api/inventory/', {
+            'name': 'Inventory Item',
+            'sku': 'INV-001',
+            'price': '12.50',
+            'low_stock_threshold': 5,
+            'description': 'Test inventory product',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['sku'], 'INV-001')
+
+    def test_update_inventory_item_as_manager(self):
+        self.authenticate(self.admin)
+        response = self.client.patch(f'/api/inventory/{self.product.id}/', {
+            'name': 'Updated Widget',
+            'price': '24.99',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.name, 'Updated Widget')
+
+    def test_delete_inventory_item_as_manager(self):
+        self.authenticate(self.admin)
+        response = self.client.delete(f'/api/inventory/{self.product.id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Product.objects.filter(pk=self.product.id).exists())
+
+    def test_staff_cannot_delete_inventory_item(self):
+        self.authenticate(self.staff)
+        response = self.client.delete(f'/api/inventory/{self.product.id}/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_inventory_validation_rejects_invalid_price(self):
+        self.authenticate(self.admin)
+        response = self.client.post('/api/inventory/', {
+            'name': 'Bad Price',
+            'sku': 'BP-001',
+            'price': '0',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_inventory_validation_requires_name_and_sku(self):
+        self.authenticate(self.admin)
+        response = self.client.post('/api/inventory/', {
+            'name': '',
+            'sku': '',
+            'price': '9.99',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

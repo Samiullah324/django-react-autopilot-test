@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -111,3 +112,85 @@ class InventoryAPITestCase(TestCase):
         self.authenticate(self.staff)
         response = self.client.get('/api/suppliers/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_list_products(self):
+        self.authenticate(self.staff)
+        response = self.client.get('/api/products/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['name'], 'Test Widget')
+        self.assertIn('description', response.data['results'][0])
+
+    def test_retrieve_product(self):
+        self.authenticate(self.staff)
+        response = self.client.get(f'/api/products/{self.product.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['sku'], 'TW-001')
+        self.assertIn('stock_levels', response.data)
+
+    def test_retrieve_product_not_found(self):
+        self.authenticate(self.staff)
+        response = self.client.get('/api/products/99999/')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_product(self):
+        self.authenticate(self.admin)
+        response = self.client.patch(f'/api/products/{self.product.id}/', {
+            'name': 'Updated Widget',
+            'price': '24.99',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.name, 'Updated Widget')
+        self.assertEqual(self.product.price, Decimal('24.99'))
+
+    def test_delete_product(self):
+        self.authenticate(self.admin)
+        product_id = self.product.id
+        response = self.client.delete(f'/api/products/{product_id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Product.objects.filter(pk=product_id).exists())
+
+    def test_delete_product_not_found(self):
+        self.authenticate(self.admin)
+        response = self.client.delete('/api/products/99999/')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_create_product_invalid_price(self):
+        self.authenticate(self.admin)
+        response = self.client.post('/api/products/', {
+            'name': 'Bad Price',
+            'sku': 'BP-001',
+            'price': '0',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('price', response.data)
+
+    def test_create_product_missing_name(self):
+        self.authenticate(self.admin)
+        response = self.client.post('/api/products/', {
+            'name': '   ',
+            'sku': 'MN-001',
+            'price': '9.99',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('name', response.data)
+
+    def test_create_product_missing_sku(self):
+        self.authenticate(self.admin)
+        response = self.client.post('/api/products/', {
+            'name': 'No SKU',
+            'sku': '',
+            'price': '9.99',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('sku', response.data)
+
+    def test_product_model_validation(self):
+        product = Product(
+            name='',
+            sku='',
+            price=Decimal('0'),
+        )
+        with self.assertRaises(ValidationError):
+            product.full_clean()

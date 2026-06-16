@@ -79,7 +79,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'name', 'sku', 'barcode', 'category', 'category_name',
             'supplier', 'supplier_name', 'price', 'low_stock_threshold',
-            'total_quantity', 'stock_status', 'image_url', 'expiry_date',
+            'description', 'total_quantity', 'stock_status', 'image_url', 'expiry_date',
             'is_active', 'created_at', 'updated_at',
         )
 
@@ -94,10 +94,9 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class ProductDetailSerializer(ProductListSerializer):
     stock_levels = WarehouseStockSerializer(many=True, read_only=True)
-    description = serializers.CharField(required=False, allow_blank=True)
 
     class Meta(ProductListSerializer.Meta):
-        fields = ProductListSerializer.Meta.fields + ('description', 'stock_levels')
+        fields = ProductListSerializer.Meta.fields + ('stock_levels',)
 
 
 class ProductWriteSerializer(serializers.ModelSerializer):
@@ -107,6 +106,41 @@ class ProductWriteSerializer(serializers.ModelSerializer):
             'name', 'sku', 'barcode', 'category', 'supplier', 'price',
             'low_stock_threshold', 'description', 'image', 'expiry_date', 'is_active',
         )
+
+    def validate_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Name is required.')
+        return value
+
+    def validate_sku(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('SKU is required.')
+        return value
+
+    def validate_price(self, value):
+        if value <= 0:
+            raise serializers.ValidationError('Price must be greater than zero.')
+        return value
+
+    def validate_low_stock_threshold(self, value):
+        if value < 0:
+            raise serializers.ValidationError('Quantity threshold cannot be negative.')
+        return value
+
+    def create(self, validated_data):
+        product = Product(**validated_data)
+        product.full_clean()
+        product.save()
+        return product
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.full_clean()
+        instance.save()
+        return instance
 
 
 class StockMovementSerializer(serializers.Serializer):

@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -77,6 +78,15 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        super().clean()
+        if self.price is not None and self.price <= 0:
+            raise ValidationError({'price': 'Price must be greater than zero.'})
+        if not self.name or not self.name.strip():
+            raise ValidationError({'name': 'Name is required.'})
+        if not self.sku or not self.sku.strip():
+            raise ValidationError({'sku': 'SKU is required.'})
 
     @property
     def total_quantity(self):

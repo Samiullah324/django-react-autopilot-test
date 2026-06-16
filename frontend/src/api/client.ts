@@ -26,6 +26,20 @@ export class ApiError extends Error {
   }
 }
 
+export function getFieldErrors(data: unknown): Record<string, string> {
+  if (!data || typeof data !== 'object') return {};
+  const errors: Record<string, string> = {};
+  for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+    if (key === 'detail') continue;
+    if (Array.isArray(value) && value.length > 0) {
+      errors[key] = String(value[0]);
+    } else if (typeof value === 'string') {
+      errors[key] = value;
+    }
+  }
+  return errors;
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   const refresh = localStorage.getItem(REFRESH_KEY);
   if (!refresh) return null;

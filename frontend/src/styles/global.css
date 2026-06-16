@@ -763,6 +763,26 @@ tr:last-child td {
   border: 1px solid rgba(5, 150, 105, 0.2);
 }
 
+.field-error {
+  color: var(--danger);
+  font-size: var(--font-xs);
+  margin-top: 4px;
+}
+
+.empty-state {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.text-muted {
+  color: var(--text-muted);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .timeline {
   display: flex;
   flex-direction: column;

@@ -2,12 +2,53 @@ import { Download, Plus, Search, Trash2, Upload } from 'lucide-react';
 import { downloadFile } from '../utils/download';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { api } from '../api/client';
+import { ApiError, api, getFieldErrors } from '../api/client';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Modal } from '../components/Modal';
 import { StockBadge } from '../components/StockBadge';
 import { useAuth } from '../context/AuthContext';
 import type { Category, Product, Supplier } from '../types';
+
+type ProductForm = {
+  name: string;
+  sku: string;
+  barcode: string;
+  category: string;
+  supplier: string;
+  price: string;
+  low_stock_threshold: string;
+  description: string;
+};
+
+const emptyForm: ProductForm = {
+  name: '',
+  sku: '',
+  barcode: '',
+  category: '',
+  supplier: '',
+  price: '',
+  low_stock_threshold: '10',
+  description: '',
+};
+
+function validateForm(form: ProductForm): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (!form.name.trim()) errors.name = 'Name is required.';
+  if (!form.sku.trim()) errors.sku = 'SKU is required.';
+  const price = Number(form.price);
+  if (form.price === '' || Number.isNaN(price)) {
+    errors.price = 'Price is required.';
+  } else if (price <= 0) {
+    errors.price = 'Price must be greater than zero.';
+  }
+  const threshold = Number(form.low_stock_threshold);
+  if (form.low_stock_threshold === '' || Number.isNaN(threshold)) {
+    errors.low_stock_threshold = 'Low stock threshold is required.';
+  } else if (threshold < 0) {
+    errors.low_stock_threshold = 'Threshold cannot be negative.';
+  }
+  return errors;
+}
 
 export function ProductsPage() {
   const { isManager } = useAuth();
@@ -17,29 +58,27 @@ export function ProductsPage() {
   const [search, setSearch] = useState('');
   const [stockFilter, setStockFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
+  const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [pageError, setPageError] = useState('');
+  const [message, setMessage] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
-
-  const [form, setForm] = useState({
-    name: '',
-    sku: '',
-    barcode: '',
-    category: '',
-    supplier: '',
-    price: '',
-    low_stock_threshold: '10',
-    description: '',
-  });
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
+    setPageError('');
     try {
       const params: Record<string, string> = {};
       if (search) params.search = search;
       if (stockFilter) params.stock_status = stockFilter;
       const res = await api.products(params);
       setProducts(res.results);
+    } catch (err) {
+      setPageError(err instanceof ApiError ? err.message : 'Failed to load products.');
     } finally {
       setLoading(false);
     }
@@ -50,18 +89,20 @@ export function ProductsPage() {
   }, [loadProducts]);
 
   useEffect(() => {
-    Promise.all([api.categories(), api.suppliers()]).then(([cats, sups]) => {
-      setCategories(cats.results);
-      setSuppliers(sups.results);
-    });
+    Promise.all([api.categories(), api.suppliers()])
+      .then(([cats, sups]) => {
+        setCategories(cats.results);
+        setSuppliers(sups.results);
+      })
+      .catch(() => {
+        setPageError('Failed to load categories or suppliers.');
+      });
   }, []);
 
   const openCreate = () => {
     setEditing(null);
-    setForm({
-      name: '', sku: '', barcode: '', category: '', supplier: '',
-      price: '', low_stock_threshold: '10', description: '',
-    });
+    setForm(emptyForm);
+    setFormErrors({});
     setModalOpen(true);
   };
 
@@ -77,48 +118,92 @@ export function ProductsPage() {
       low_stock_threshold: String(product.low_stock_threshold),
       description: product.description || '',
     });
+    setFormErrors({});
     setModalOpen(true);
   };
 
   const handleSave = async () => {
-    const payload = {
-      name: form.name,
-      sku: form.sku,
-      barcode: form.barcode,
-      category: form.category ? Number(form.category) : null,
-      supplier: form.supplier ? Number(form.supplier) : null,
-      price: form.price,
-      low_stock_threshold: Number(form.low_stock_threshold),
-      description: form.description,
-    };
-    if (editing) {
-      await api.updateProduct(editing.id, payload);
-    } else {
-      await api.createProduct(payload);
+    const clientErrors = validateForm(form);
+    setFormErrors(clientErrors);
+    if (Object.keys(clientErrors).length > 0) return;
+
+    setSaving(true);
+    setMessage('');
+    try {
+      const payload = {
+        name: form.name.trim(),
+        sku: form.sku.trim(),
+        barcode: form.barcode.trim(),
+        category: form.category ? Number(form.category) : null,
+        supplier: form.supplier ? Number(form.supplier) : null,
+        price: form.price,
+        low_stock_threshold: Number(form.low_stock_threshold),
+        description: form.description,
+      };
+      if (editing) {
+        await api.updateProduct(editing.id, payload);
+        setMessage('Product updated successfully.');
+      } else {
+        await api.createProduct(payload);
+        setMessage('Product created successfully.');
+      }
+      setModalOpen(false);
+      await loadProducts();
+    } catch (err) {
+      if (err instanceof ApiError && err.data) {
+        const apiErrors = getFieldErrors(err.data);
+        if (Object.keys(apiErrors).length > 0) {
+          setFormErrors(apiErrors);
+        } else {
+          setFormErrors({ _form: err.message });
+        }
+      } else {
+        setFormErrors({ _form: 'Failed to save product.' });
+      }
+    } finally {
+      setSaving(false);
     }
-    setModalOpen(false);
-    loadProducts();
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this product?')) return;
-    await api.deleteProduct(id);
-    loadProducts();
+    setDeletingId(id);
+    setMessage('');
+    setPageError('');
+    try {
+      await api.deleteProduct(id);
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      setMessage('Product deleted successfully.');
+    } catch (err) {
+      setPageError(err instanceof ApiError ? err.message : 'Failed to delete product.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const fd = new FormData();
-    fd.append('file', file);
-    await fetch('/api/products/import_file/', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${localStorage.getItem('inventory_access_token')}` },
-      body: fd,
-    });
-    loadProducts();
-    e.target.value = '';
+    setPageError('');
+    setMessage('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      await fetch('/api/products/import_file/', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('inventory_access_token')}` },
+        body: fd,
+      });
+      setMessage('Products imported successfully.');
+      await loadProducts();
+    } catch {
+      setPageError('Failed to import products.');
+    } finally {
+      e.target.value = '';
+    }
   };
+
+  const fieldError = (key: string) => formErrors[key];
 
   return (
     <>
@@ -143,6 +228,13 @@ export function ProductsPage() {
         )}
       </div>
 
+      {pageError && <div className="error-banner">{pageError}</div>}
+      {message && (
+        <div className={message.includes('success') ? 'success-banner' : 'error-banner'}>
+          {message}
+        </div>
+      )}
+
       <div className="filters-bar">
         <div className="search-field">
           <Search size={16} className="search-field-icon" />
@@ -165,11 +257,14 @@ export function ProductsPage() {
         <div className="table-wrap">
           {loading ? (
             <LoadingSpinner message="Loading products..." />
+          ) : products.length === 0 ? (
+            <p className="empty-state">No products found. {isManager ? 'Add your first product to get started.' : ''}</p>
           ) : (
             <table>
               <thead>
                 <tr>
                   <th>Product</th>
+                  <th>Description</th>
                   <th>SKU</th>
                   <th>Category</th>
                   <th>Price</th>
@@ -182,6 +277,7 @@ export function ProductsPage() {
                 {products.map((p) => (
                   <tr key={p.id}>
                     <td><strong>{p.name}</strong></td>
+                    <td className="text-muted">{p.description || '—'}</td>
                     <td>{p.sku}</td>
                     <td>{p.category_name || '—'}</td>
                     <td>${Number(p.price).toFixed(2)}</td>
@@ -191,7 +287,11 @@ export function ProductsPage() {
                       <td>
                         <div className="btn-group">
                           <button className="btn btn-secondary" onClick={() => openEdit(p)}>Edit</button>
-                          <button className="btn btn-danger btn-icon" onClick={() => handleDelete(p.id)}>
+                          <button
+                            className="btn btn-danger btn-icon"
+                            onClick={() => handleDelete(p.id)}
+                            disabled={deletingId === p.id}
+                          >
                             <Trash2 size={16} />
                           </button>
                         </div>
@@ -211,19 +311,34 @@ export function ProductsPage() {
         onClose={() => setModalOpen(false)}
         footer={
           <>
-            <button className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleSave}>Save</button>
+            <button className="btn btn-secondary" onClick={() => setModalOpen(false)} disabled={saving}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving...' : 'Save'}
+            </button>
           </>
         }
       >
+        {formErrors._form && <div className="error-banner">{formErrors._form}</div>}
         <div className="form-grid">
           <div className="form-group">
             <label>Name</label>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
+              aria-invalid={!!fieldError('name')}
+            />
+            {fieldError('name') && <span className="field-error">{fieldError('name')}</span>}
           </div>
           <div className="form-group">
             <label>SKU</label>
-            <input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} required />
+            <input
+              value={form.sku}
+              onChange={(e) => setForm({ ...form, sku: e.target.value })}
+              required
+              aria-invalid={!!fieldError('sku')}
+            />
+            {fieldError('sku') && <span className="field-error">{fieldError('sku')}</span>}
           </div>
           <div className="form-group">
             <label>Barcode</label>
@@ -231,7 +346,16 @@ export function ProductsPage() {
           </div>
           <div className="form-group">
             <label>Price</label>
-            <input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
+              required
+              aria-invalid={!!fieldError('price')}
+            />
+            {fieldError('price') && <span className="field-error">{fieldError('price')}</span>}
           </div>
           <div className="form-group">
             <label>Category</label>
@@ -249,7 +373,17 @@ export function ProductsPage() {
           </div>
           <div className="form-group">
             <label>Low Stock Threshold</label>
-            <input type="number" value={form.low_stock_threshold} onChange={(e) => setForm({ ...form, low_stock_threshold: e.target.value })} />
+            <input
+              type="number"
+              min="0"
+              value={form.low_stock_threshold}
+              onChange={(e) => setForm({ ...form, low_stock_threshold: e.target.value })}
+              required
+              aria-invalid={!!fieldError('low_stock_threshold')}
+            />
+            {fieldError('low_stock_threshold') && (
+              <span className="field-error">{fieldError('low_stock_threshold')}</span>
+            )}
           </div>
           <div className="form-group form-group--full">
             <label>Description</label>

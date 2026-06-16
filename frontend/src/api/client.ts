@@ -124,6 +124,31 @@ export const api = {
   deleteProduct: (id: number) =>
     apiRequest<void>(`/api/products/${id}/`, { method: 'DELETE' }),
 
+  inventory: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return apiRequest<import('../types').Paginated<import('../types').Product>>(
+      `/api/inventory/${qs}`,
+    );
+  },
+
+  inventoryItem: (id: number) =>
+    apiRequest<import('../types').Product>(`/api/inventory/${id}/`),
+
+  createInventoryItem: (data: FormData | Record<string, unknown>) =>
+    apiRequest<import('../types').Product>('/api/inventory/', {
+      method: 'POST',
+      body: data instanceof FormData ? data : JSON.stringify(data),
+    }),
+
+  updateInventoryItem: (id: number, data: FormData | Record<string, unknown>) =>
+    apiRequest<import('../types').Product>(`/api/inventory/${id}/`, {
+      method: 'PATCH',
+      body: data instanceof FormData ? data : JSON.stringify(data),
+    }),
+
+  deleteInventoryItem: (id: number) =>
+    apiRequest<void>(`/api/inventory/${id}/`, { method: 'DELETE' }),
+
   suppliers: (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return apiRequest<import('../types').Paginated<import('../types').Supplier>>(

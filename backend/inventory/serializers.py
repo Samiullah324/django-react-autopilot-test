@@ -108,11 +108,31 @@ class ProductWriteSerializer(serializers.ModelSerializer):
             'low_stock_threshold', 'description', 'image', 'expiry_date', 'is_active',
         )
 
+    def validate_name(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError('Name is required.')
+        return value.strip()
+
+    def validate_sku(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError('SKU is required.')
+        return value.strip()
+
+    def validate_price(self, value):
+        if value is not None and value <= 0:
+            raise serializers.ValidationError('Price must be greater than 0.')
+        return value
+
+    def validate_low_stock_threshold(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError('Low stock threshold must be 0 or greater.')
+        return value
+
 
 class StockMovementSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
     warehouse_id = serializers.IntegerField()
-    quantity = serializers.IntegerField()
+    quantity = serializers.IntegerField(min_value=1)
     transaction_type = serializers.ChoiceField(
         choices=InventoryTransaction.TransactionType.choices,
     )

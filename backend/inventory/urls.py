@@ -5,6 +5,7 @@ from .views import (
     DashboardView,
     StockMovementView,
     CategoryViewSet,
+    InventoryViewSet,
     NotificationViewSet,
     ProductViewSet,
     SupplierViewSet,
@@ -17,6 +18,7 @@ router = DefaultRouter()
 router.register('categories', CategoryViewSet, basename='category')
 router.register('suppliers', SupplierViewSet, basename='supplier')
 router.register('warehouses', WarehouseViewSet, basename='warehouse')
+router.register('inventory', InventoryViewSet, basename='inventory')
 router.register('products', ProductViewSet, basename='product')
 router.register('stock', WarehouseStockViewSet, basename='stock')
 router.register('transactions', TransactionViewSet, basename='transaction')
